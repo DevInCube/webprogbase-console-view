@@ -170,7 +170,7 @@ class ConsoleBrowser {
             } else if (inputString === goForwardUserState) {
                 this.history.forward();
             } else {
-                this.sendRequest(new Request(inputString))
+                this.sendRequest(new Request(inputString));
             }
         }
         else if (this.viewState === BrowserViewState.InputForm) {
@@ -190,7 +190,7 @@ class ConsoleBrowser {
                     this._showFormFieldInput();  // next field
                 } else {
                     // form data is ready
-                    this.sendRequest(new Request(this.form.state, this.form.getFormData()))
+                    this.sendRequest(new Request(this.form.state, this.form.getFormData()));
                 }
             }
         }
