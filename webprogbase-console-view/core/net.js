@@ -1,4 +1,5 @@
 const EventEmitter = require('events');
+const {SourceError} = require('./error');
 
 const socketMessageEvent = 'message';
 const socketSendEvent = 'send';
