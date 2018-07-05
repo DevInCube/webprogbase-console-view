@@ -1,4 +1,4 @@
-let {Network, ConsoleBrowser, ServerApp, InputForm} = require('webprogbase-console-view');
+let {ConsoleBrowser, ServerApp, InputForm} = require('webprogbase-console-view');
 
 let students = ['First', 'Second', 'Third'];
 
@@ -64,9 +64,4 @@ app.listen(80);
 //
 
 let browser = new ConsoleBrowser();
-
-let network = new Network();
-network.add(app);
-network.add(browser);
-
 browser.navigate(80);
