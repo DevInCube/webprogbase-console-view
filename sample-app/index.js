@@ -1,10 +1,11 @@
-let {ConsoleView, InputForm} = require('webprogbase-console-view');
+let {ConsoleBrowser, ServerApp, InputForm} = require('webprogbase-console-view');
 
 let students = ['First', 'Second', 'Third'];
 
-let view = new ConsoleView();
+let browser = new ConsoleBrowser();
+let app = new ServerApp();
 
-view.use("/", (req, res) => {
+app.use("/", (req, res) => {
     let links = {
         "f": "Form sample", 
         "f2": "Form sample many fields", 
@@ -16,7 +17,7 @@ view.use("/", (req, res) => {
     res.send("Hello!", links);
 });
 
-view.use("f", (req, res) => {
+app.use("f", (req, res) => {
     let studentsListStr = "";
     for (let [i, st] of students.entries()) {
         studentsListStr += i + ". " + st + "\n";
@@ -28,7 +29,7 @@ view.use("f", (req, res) => {
     res.send(text, indexForm);
 });
 
-view.use("f2", (req, res) => {
+app.use("f2", (req, res) => {
     let text = 'Hello!';
     let form = new InputForm("formaccept", {
         "index": "Just",
@@ -38,19 +39,19 @@ view.use("f2", (req, res) => {
     res.send(text, form);
 });
 
-view.use("n", (req, res) => {
+app.use("n", (req, res) => {
     res.send("Next, please");
 });
 
-view.use("r", (req, res) => {
+app.use("r", (req, res) => {
     res.redirect("n");
 });
 
-view.use("t", (req, res) => {
+app.use("t", (req, res) => {
     // error: no response
 });
 
-view.use("formaccept", (req, res) => {
+app.use("formaccept", (req, res) => {
     let index = parseInt(req.data.index);
     if ((!index && index !== 0) || (index < 0 || index >= students.length)) {
         res.send("Invalid student index input: " + req.data.index);
@@ -59,4 +60,5 @@ view.use("formaccept", (req, res) => {
     }
 });
 
-view.listen();
+app.listen(browser);
+browser.start();

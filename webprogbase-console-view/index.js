@@ -1,4 +1,5 @@
-const logSourceName = "View";
+const EventEmitter = require('events');
+
 const responseTimeoutMillis = 3000;
 const initialUserState = '/';
 const goBackUserState = '<';
@@ -6,11 +7,19 @@ const goForwardUserState = '>';
 const cancelInputForm = '<<';
 const goBackFieldInputForm = '<';
 
+class SourceError extends Error {
+
+    constructor(sourceObject, message) {
+        super(`[${sourceObject.constructor.name}] ${message}`);
+    }
+}
+
 class Request {
 
-    constructor(stateName, formData) {
+    constructor(stateName, formData = null) {
         this.state = stateName;
         this.data = formData;  // key-value (string) dictionary, if present
+        this.isRedirected = false;
     }
 }
 
@@ -24,13 +33,6 @@ class Response {
         this.isHandled = false;  // was this reponse already handled
 
         this.handler = handler;
-
-        this.timeout = setTimeout(onTimeout.bind(this), responseTimeoutMillis);
-
-        function onTimeout() {
-            const errorMsg = `[${logSourceName}] Response timeout (${responseTimeoutMillis})`;
-            this._handle(new Error(errorMsg));
-        }
     }
 
     send(text, statesOrForm = null) {
@@ -48,20 +50,14 @@ class Response {
         this._handle();
     }
 
-    _handle(err) {
+    _handle() {
         if (this.isHandled) {
-            throw new Error(`[${logSourceName}] Response is already handled`);
+            throw new SourceError(this, `Response is already handled`);
         }
         this.isHandled = true;
-        clearTimeout(this.timeout);
-        this.handler(err, this);  // success
+        this.handler(this);  // success
     }
 }
-
-const ViewStates = Object.freeze({
-    ShowText: {},
-    InputForm: {}
-});
 
 class InputForm {
 
@@ -96,11 +92,11 @@ class InputForm {
 
 class History {
 
-    constructor(view) {
+    constructor(browser) {
         this.states = [];
         this.index = -1;
 
-        this.view = view;
+        this.browser = browser;
     }
 
     pushState(name, data) {
@@ -113,20 +109,27 @@ class History {
         this.index += 1;
     }
 
+    popState() {
+        this.states.pop();
+        this.index -= 1;
+    }
+
     back() {
         if (this.index <= 0) {
-            throw new Error(`[${logSourceName}] Invalid history usage. No previous state`);
+            throw new SourceError(this, `Invalid usage. No previous state`);
         }
         this.index -= 1;
-        this.view._askUserState(this.state.name, this.state.data);
+
+        this.browser.sendRequest(new Request(this.state.name, this.state.data));
     }
 
     forward() {
         if (this.index >= this.states.length) {
-            throw new Error(`[${logSourceName}] history usage. No next state`);
+            throw new SourceError(this, `Invalid usage. No next state`);
         }
         this.index += 1;
-        this.view._askUserState(this.state.name, this.state.data);
+        
+        this.browser.sendRequest(new Request(this.state.name, this.state.data));
     }
 
     get length() {
@@ -146,38 +149,80 @@ class History {
     }
 }
 
-class ConsoleView {
-    
+const BrowserViewState = Object.freeze({
+    Error: {},
+    ShowText: {},
+    InputForm: {}
+});
+
+class ConsoleBrowser extends EventEmitter {
+
     constructor() {
-        this.viewState = ViewStates.ShowText;  // current view state (text | form)
-        this.handlers = {};  // request handlers
+        super();
+
+        this.viewState = BrowserViewState.ShowText;  // current view state (text | form)
         this.history = new History(this);  // state changes history & navigation
-        
+
+        // state data
         this.states = [];  // current states available
         this.form = null;  // current state form
         this.fieldIndex = 0;  // current state form current input field index
+
+        this.timeout = null;  // request timeout
     }
 
-    use(stateName, handler) {
-        if (this.handlers[stateName]) {
-            let errMsg = `[${logSourceName}] State '${stateName}' handler is already set`;
-            throw new Error(errMsg);
-        }
-        this.handlers[stateName] = handler;
-    }
-
-    listen() {
+    start() {
         let stdin = process.openStdin();
         // subscribe for console user input (fires after Enter is pressed)
         stdin.addListener("data", this._onInput.bind(this));
 
-        this._askUserState(initialUserState);
+        this.sendRequest(new Request(initialUserState));
+    }
+
+    sendRequest(req) {
+        let stateName = req.state;
+        let formData = req.data;
+        this.history.pushState(stateName, formData);
+
+        this.timeout = setTimeout(onTimeout.bind(this), responseTimeoutMillis);
+
+        this._clearScreen();
+        this._showStateName();
+
+        this.emit('request', req);
+
+        function onTimeout() {
+            const errorMsg = `No data received.\nUnable to load the state because the server sent no data.`;
+            this._toError(new SourceError(this, errorMsg));
+        }
+    }
+
+    handleResponse(res) {
+        clearTimeout(this.timeout);
+
+        if (!res.isHandled) {
+            const errorMsg = `Not found.\nThe requested state was not found on server.`;
+            this._toError(new SourceError(this, errorMsg));
+            return;
+        }
+        
+        if (res.redirectState) {
+            this.history.popState();
+            this._redirect(res.redirectState);
+        } else {
+            if (res.form) {
+                this._toInputForm(res.text, res.form);
+            }
+            else {
+                this._toShowText(res.text, res.states);
+            }
+        }
     }
 
     _onInput(dataObject) {
         let inputString = dataObject.toString().trim();
 
-        if (this.viewState === ViewStates.ShowText) {
+        if (this.viewState === BrowserViewState.ShowText) {
             if (!inputString) { return; }  // ignore empty input
             if (!Object.keys(this.states).includes(inputString)) {
                 console.log(`Invalid state: '${inputString}'. Try again.`);
@@ -189,10 +234,10 @@ class ConsoleView {
             } else if (inputString === goForwardUserState) {
                 this.history.forward();
             } else {
-                this._askUserState(inputString);
+                this.sendRequest(new Request(inputString))
             }
         }
-        else if (this.viewState === ViewStates.InputForm) {
+        else if (this.viewState === BrowserViewState.InputForm) {
             if (inputString === cancelInputForm) {
                 this.history.back();  // cancel form input
             } else if (inputString === goBackFieldInputForm) {
@@ -209,46 +254,21 @@ class ConsoleView {
                     this._showFormFieldInput();  // next field
                 } else {
                     // form data is ready
-                    this._askUserState(this.form.state, this.form.getFormData());
+                    this.sendRequest(new Request(this.form.state, this.form.getFormData()))
                 }
             }
-        }
-        else {
-            throw new Error(`[${logSourceName}] Not supported: ${this.viewState}`);
         }
     }
 
-    _askUserState(stateName, formData = null) {
-        const stateHandler = this.handlers[stateName];
-        if (!stateHandler) {
-            let errMsg = `[${logSourceName}] State '${stateName}' handler is not set`;
-            throw new Error(errMsg);
-        }
-        let request = new Request(stateName, formData);
-        let response = new Response((err, res) => {
-            if (err) { throw err; }
-            if (res.redirectState) {
-                this._redirect(res.redirectState);
-            } else {
-                this.history.pushState(stateName, formData);
-                if (res.form) {
-                    this._toInputForm(res.text, res.form);
-                }
-                else {
-                    this._toShowText(res.text, res.states);
-                }
-            }
-        });
-        // process.stdout.write('\x1Bc');  // clear console (Win)
-        console.clear();
-        stateHandler(request, response);
+    _toError(err) {
+        this._toShowText(err.toString());
     }
 
     _toShowText(text, states) {
-        this.viewState = ViewStates.ShowText;
+        this.viewState = BrowserViewState.ShowText;
         this.states = prepareStates.bind(this)(states);
         //
-        this._showStateAndText(text);
+        this._showText(text);
         this._showNextStateInput();
 
         function prepareStates(states) {
@@ -266,25 +286,40 @@ class ConsoleView {
 
     _toInputForm(text, form) {
         if (form.length === 0) {
-            throw new Error(`[${logSourceName}] Form has no fields`);
+            throw new SourceError(this, `Form has no fields`);
         }
         //
-        this.viewState = ViewStates.InputForm;
+        this.viewState = BrowserViewState.InputForm;
         this.form = form;
         this.fieldIndex = 0;
         // 
-        this._showStateAndText(text);
+        this._showText(text);
         this._showFormInput();
         this._showFormFieldInput();
     }
 
     _redirect(redirectState) {
-        process.nextTick(() => this._askUserState(redirectState));
+        this.sendRequest(new Request(redirectState));
     }
 
-    _showStateAndText(text) {
+    _clearScreen() {
+        if (process.platform === "win32") {
+            process.stdout.write('\x1Bc');  // clear console (Win)
+        }
+        console.clear();
+    }
+
+    _showStateName() {
         console.log(this.history.state.name);
         console.log('-------------------------------');
+    }
+
+    _showHistory() {
+        console.log(this.history.states.map(x => x.name).join(", "));
+        console.log('-------------------------------');
+    }
+
+    _showText(text) {
         console.log(text);
         console.log('-------------------------------');
     }
@@ -314,7 +349,40 @@ class ConsoleView {
     }
 }
 
-module.exports = { ConsoleView, InputForm };
+class ServerApp {
+    
+    constructor() {
+        this.browser = null;
+
+        this.handlers = {};  // request handlers
+    }
+
+    use(stateName, handler) {
+        if (this.handlers[stateName]) {
+            let errMsg = `State '${stateName}' handler is already set`;
+            throw new SourceError(this, errMsg);
+        }
+        this.handlers[stateName] = handler;
+    }
+
+    listen(browser) {
+        this.browser = browser;
+        this.browser.on('request', this._onRequest.bind(this));
+    }
+
+    _onRequest(request) {
+        const stateHandler = this.handlers[request.state];
+        if (!stateHandler) {
+            let notFoundResponse = new Response();
+            this.browser.handleResponse(notFoundResponse);
+            return;
+        }
+        let response = new Response(res => this.browser.handleResponse(res));
+        stateHandler(request, response);
+    }
+}
+
+module.exports = { ConsoleBrowser, ServerApp, InputForm };
 
 // utilities
 
