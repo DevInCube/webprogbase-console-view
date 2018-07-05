@@ -98,10 +98,10 @@ class ConsoleBrowser {
 
     navigate(serverPort) {
         this.serverPort = serverPort;
-        this._sendRequest(new Request(initialUserState));
+        this.sendRequest(new Request(initialUserState));
     }
 
-    _sendRequest(req) {
+    sendRequest(req) {
         let stateName = req.state;
         let formData = req.data;
         this.history.pushState(stateName, formData);
@@ -170,7 +170,7 @@ class ConsoleBrowser {
             } else if (inputString === goForwardUserState) {
                 this.history.forward();
             } else {
-                this._sendRequest(new Request(inputString))
+                this.sendRequest(new Request(inputString))
             }
         }
         else if (this.viewState === BrowserViewState.InputForm) {
@@ -190,7 +190,7 @@ class ConsoleBrowser {
                     this._showFormFieldInput();  // next field
                 } else {
                     // form data is ready
-                    this._sendRequest(new Request(this.form.state, this.form.getFormData()))
+                    this.sendRequest(new Request(this.form.state, this.form.getFormData()))
                 }
             }
         }
@@ -235,7 +235,7 @@ class ConsoleBrowser {
     }
 
     _redirect(redirectState) {
-        this._sendRequest(new Request(redirectState));
+        this.sendRequest(new Request(redirectState));
     }
 
     _clearScreen() {

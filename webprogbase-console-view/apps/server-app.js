@@ -25,15 +25,17 @@ class ServerApp {
                     const request = message;
                     const stateHandler = this.handlers[request.state];
                     if (!stateHandler) {
-                        let notFoundResponse = new Response();
-                        clientSocket.send(notFoundResponse);
-                        return;
-                    }
-                    let response = new Response(res => {
-                        clientSocket.send(res);
+                        clientSocket.send(new Response());  // not found
                         clientSocket.close();
-                    });
-                    stateHandler(request, response);
+                    } else {
+                        let response = new Response(res => {
+                            clientSocket.send(res);
+                            clientSocket.close();
+                        });
+                        stateHandler(request, response);
+                    }
+                } else {
+                    clientSocket.close();
                 }
             });
         });
