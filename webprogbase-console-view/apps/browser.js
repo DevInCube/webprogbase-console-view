@@ -96,7 +96,7 @@ class ConsoleBrowser {
         stdin.addListener("data", this._onInput.bind(this));
     }
 
-    navigate(serverPort) {
+    open(serverPort) {
         this.serverPort = serverPort;
         this.sendRequest(new Request(initialUserState));
     }
@@ -109,34 +109,34 @@ class ConsoleBrowser {
         this._clearScreen();
         this._showStateName();
 
-        this.timeout = setTimeout(onTimeout.bind(this), responseTimeoutMillis);
         send.bind(this)(req, this._handleResponse.bind(this));
-
-        function onTimeout() {
-            const errorMsg = `No data received.\nUnable to load the state because the server sent no data.`;
-            this._toError(new SourceError(this, errorMsg));
-        }
 
         function send(req, resHandler) {
             let serverSocket = new Socket();
             if (!serverSocket.connect(this.serverPort)) {
-                const errorMsg = `The app can't be reached.\nApp ${serverPort} refused to connect.`;
+                const errorMsg = `The app can't be reached.\nApp ${this.serverPort} refused to connect.`;
                 this._toError(new SourceError(this, errorMsg));
                 return;
             }
             serverSocket.on('message', message => {
                 if (message instanceof Response) {
+                    clearTimeout(this.timeout);
                     resHandler(message);
                 }
                 serverSocket.close();
             });
+
+            this.timeout = setTimeout(onTimeout.bind(this), responseTimeoutMillis);
             serverSocket.send(req);
+
+            function onTimeout() {
+                const errorMsg = `No data received.\nUnable to load the state because the server sent no data.`;
+                this._toError(new SourceError(this, errorMsg));
+            }
         }
     }
 
     _handleResponse(res) {
-        clearTimeout(this.timeout);
-
         if (!res.isHandled) {
             const errorMsg = `Not found.\nThe requested state was not found on server.`;
             this._toError(new SourceError(this, errorMsg));

@@ -64,4 +64,4 @@ app.listen(80);
 //
 
 let browser = new ConsoleBrowser();
-browser.navigate(80);
+browser.open(80);
