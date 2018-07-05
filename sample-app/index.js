@@ -1,8 +1,7 @@
-let {ConsoleBrowser, ServerApp, InputForm} = require('webprogbase-console-view');
+let {Network, ConsoleBrowser, ServerApp, InputForm} = require('webprogbase-console-view');
 
 let students = ['First', 'Second', 'Third'];
 
-let browser = new ConsoleBrowser();
 let app = new ServerApp();
 
 app.use("/", (req, res) => {
@@ -60,5 +59,14 @@ app.use("formaccept", (req, res) => {
     }
 });
 
-app.listen(browser);
-browser.start();
+app.listen(80);
+
+//
+
+let browser = new ConsoleBrowser();
+
+let network = new Network();
+network.add(app);
+network.add(browser);
+
+browser.navigate(80);

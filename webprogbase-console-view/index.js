@@ -155,7 +155,24 @@ const BrowserViewState = Object.freeze({
     InputForm: {}
 });
 
-class ConsoleBrowser extends EventEmitter {
+class App extends EventEmitter {
+
+    constructor() {
+        super();
+
+        this.port = null;
+    }
+
+    send(receiverPort, message) {
+        this.emit('message', this, receiverPort, message);
+    }
+
+    receive(sender, message) { 
+
+    }
+}
+
+class ConsoleBrowser extends App {
 
     constructor() {
         super();
@@ -169,13 +186,16 @@ class ConsoleBrowser extends EventEmitter {
         this.fieldIndex = 0;  // current state form current input field index
 
         this.timeout = null;  // request timeout
-    }
 
-    start() {
         let stdin = process.openStdin();
         // subscribe for console user input (fires after Enter is pressed)
         stdin.addListener("data", this._onInput.bind(this));
+    }
 
+    navigate(serverPort) {
+        this.port = 60000;  // set random
+        this.serverPort = serverPort;
+        
         this.sendRequest(new Request(initialUserState));
     }
 
@@ -189,7 +209,7 @@ class ConsoleBrowser extends EventEmitter {
         this._clearScreen();
         this._showStateName();
 
-        this.emit('request', req);
+        this.send(this.serverPort, req);
 
         function onTimeout() {
             const errorMsg = `No data received.\nUnable to load the state because the server sent no data.`;
@@ -197,7 +217,19 @@ class ConsoleBrowser extends EventEmitter {
         }
     }
 
-    handleResponse(res) {
+    receive(sender, message) { 
+        if (!sender && !message) {
+            clearTimeout(this.timeout);
+            const errorMsg = `The app can't be reached.\nApp refused to connect.`;
+            this._toError(new SourceError(this, errorMsg));
+            return;
+        }
+        if (message instanceof Response) {
+            this._handleResponse(message);
+        }
+    }
+
+    _handleResponse(res) {
         clearTimeout(this.timeout);
 
         if (!res.isHandled) {
@@ -310,7 +342,7 @@ class ConsoleBrowser extends EventEmitter {
     }
 
     _showStateName() {
-        console.log(this.history.state.name);
+        console.log(`[${this.serverPort}] ${this.history.state.name}`);
         console.log('-------------------------------');
     }
 
@@ -349,10 +381,10 @@ class ConsoleBrowser extends EventEmitter {
     }
 }
 
-class ServerApp {
+class ServerApp extends App {
     
     constructor() {
-        this.browser = null;
+        super();
 
         this.handlers = {};  // request handlers
     }
@@ -365,24 +397,47 @@ class ServerApp {
         this.handlers[stateName] = handler;
     }
 
-    listen(browser) {
-        this.browser = browser;
-        this.browser.on('request', this._onRequest.bind(this));
+    listen(port) {
+        this.port = port;
     }
 
-    _onRequest(request) {
+    receive(sender, message) { 
+        if (message instanceof Request) {
+            this._handleRequest(sender.port, message);
+        }
+    }
+
+    _handleRequest(senderPort, request) {
         const stateHandler = this.handlers[request.state];
         if (!stateHandler) {
             let notFoundResponse = new Response();
-            this.browser.handleResponse(notFoundResponse);
+            this.send(senderPort, notFoundResponse);
             return;
         }
-        let response = new Response(res => this.browser.handleResponse(res));
+        let response = new Response(res => this.send(senderPort, res));
         stateHandler(request, response);
     }
 }
 
-module.exports = { ConsoleBrowser, ServerApp, InputForm };
+class Network {
+
+    constructor() {
+        this.apps = [];
+    }
+
+    add(app) {
+        if (!(app instanceof App)) { throw new SourceError(this, `Object is not an App`); }
+        app.network = this;
+        app.on('message', (senderApp, receiverPort, message) => {
+            let app = this.apps.find(x => x.port === receiverPort);
+            if (!app) { senderApp.receive(null, null); }
+            else { app.receive(senderApp, message); }
+        });
+        this.apps.push(app);
+    }
+}
+
+module.exports = { Network, ConsoleBrowser, ServerApp, InputForm };
 
 // utilities
 
