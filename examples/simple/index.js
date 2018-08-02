@@ -1,4 +1,4 @@
-let {ConsoleBrowser, ServerApp, InputForm} = require('webprogbase-console-view');
+let {ConsoleBrowser, ServerApp, InputForm} = require('../../');
 
 let students = ['First', 'Second', 'Third'];
 
@@ -47,6 +47,7 @@ app.use("r", (req, res) => {
 });
 
 app.use("t", (req, res) => {
+    void res;  // unused
     // error: no response
 });
 

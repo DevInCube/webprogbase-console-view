@@ -1,11 +1,13 @@
 {
   "name": "webprogbase-console-view",
   "version": "1.0.0",
+  "author": "DevInCube",
   "description": "Console browser and server app module with simplified express-like API",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "DevInCube",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": "DevInCube/webprogbase-console-view"
 }
