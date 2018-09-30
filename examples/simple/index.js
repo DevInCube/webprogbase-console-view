@@ -11,7 +11,15 @@ app.use("/", (req, res) => {
         "n": "Just a state", 
         "e": "No handler error",
         "t": "Response timeout", 
-        "r": "Redirect to n"
+        "r": "Redirect to n",
+        "d": {
+            description: "state link with data",
+            data: {
+                userId: 13,
+                x: "Y",
+            }
+        },
+        "rd": "Redirect to d with data"
     };
     res.send("Hello!", links);
 });
@@ -49,6 +57,14 @@ app.use("r", (req, res) => {
 app.use("t", (req, res) => {
     void res;  // unused
     // error: no response
+});
+
+app.use("rd", (req, res) => {
+    res.redirect("d", {some: "Data in redirect"});
+});
+
+app.use("d", (req, res) => {
+    res.send(`Got some data with request ${JSON.stringify(req.data)}`);
 });
 
 app.use("formaccept", (req, res) => {
