@@ -1,11 +1,11 @@
-let {ConsoleBrowser, ServerApp, InputForm} = require('../../');
+const {ConsoleBrowser, ServerApp, InputForm} = require('../../');
 
-let students = ['First', 'Second', 'Third'];
+const students = ['First', 'Second', 'Third'];
 
-let app = new ServerApp();
+const app = new ServerApp();
 
 app.use("/", (req, res) => {
-    let links = {
+    const links = {
         "f": "Form sample", 
         "f2": "Form sample many fields", 
         "f3": "Form sample many fields with default and value", 
@@ -29,19 +29,19 @@ app.use("/", (req, res) => {
 
 app.use("f", (req, res) => {
     let studentsListStr = "";
-    for (let [i, st] of students.entries()) {
+    for (const [i, st] of students.entries()) {
         studentsListStr += i + ". " + st + "\n";
     }
-    let text = `Select student index:\n\n${studentsListStr}`;
-    let indexForm = new InputForm("formaccept", {
+    const text = `Select student index:\n\n${studentsListStr}`;
+    const indexForm = new InputForm("formaccept", {
         "index": "Index of student"
     });
     res.send(text, indexForm);
 });
 
 app.use("f2", (req, res) => {
-    let text = 'Hello!';
-    let form = new InputForm("formaccept", {
+    const text = 'Hello!';
+    const form = new InputForm("formaccept", {
         "index": "Just",
         "name": "Student name",
         "score": "Hmmmm"
@@ -51,8 +51,12 @@ app.use("f2", (req, res) => {
 
 
 app.use("f3", (req, res) => {
-    let text = 'Hello!';
-    let form = new InputForm("formaccept", {
+    const text = 'Hello!';
+    const form = new InputForm("formaccept", {
+        "id": {
+            description: "Enter id",
+            value: "1",
+        },
         "index": "Just",
         "name": {
             description: "Enter student name",  
@@ -98,7 +102,7 @@ app.use("d", (req, res) => {
 });
 
 app.use("formaccept", (req, res) => {
-    let index = parseInt(req.data.index);
+    const index = parseInt(req.data.index);
     if ((!index && index !== 0) || (index < 0 || index >= students.length)) {
         res.send("Invalid student index input: " + req.data.index);
     } else {
@@ -110,5 +114,5 @@ app.listen(80);
 
 //
 
-let browser = new ConsoleBrowser();
+const browser = new ConsoleBrowser();
 browser.open(80);

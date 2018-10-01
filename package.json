@@ -9,5 +9,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "license": "MIT",
-  "repository": "DevInCube/webprogbase-console-view"
+  "repository": "DevInCube/webprogbase-console-view",
+  "devDependencies": {
+    "eslint": "^5.6.1"
+  }
 }

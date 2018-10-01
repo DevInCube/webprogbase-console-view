@@ -3,16 +3,19 @@
         "ecmaVersion": 8,
         "sourceType": "module",
         "ecmaFeatures": {
-            "jsx": true
+            "jsx": true,
+            "experimentalObjectRestSpread": true
         }
     },
     "rules": {
         "semi": 2,
-        "no-unused-vars": ["error", { "vars": "all", "args": "after-used" }],
-        "no-undefined": "error",
+        "no-unused-vars": ["warn", { "vars": "all", "args": "after-used" }],
+        "no-undefined": "warn",
         "no-undef": "error",
         "eqeqeq": "error",
-        "no-var": "error"
+        "no-var": "error",
+        "prefer-const": "warn",
+        "no-const-assign": "error"
     },
     "env" : {
         "es6": true,
