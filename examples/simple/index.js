@@ -19,7 +19,9 @@ app.use("/", (req, res) => {
                 x: "Y",
             }
         },
-        "rd": "Redirect to d with data"
+        "rd": "Redirect to d with data",
+        "rde": "Redirect to d with invalid data",
+        "rde2": "Redirect to d with invalid data (circular structure)",
     };
     res.send("Hello!", links);
 });
@@ -61,6 +63,16 @@ app.use("t", (req, res) => {
 
 app.use("rd", (req, res) => {
     res.redirect("d", {some: "Data in redirect"});
+});
+
+app.use("rde", (req, res) => {
+    res.redirect("d", "Invalid data here");
+});
+
+app.use("rde2", (req, res) => {
+    const co = {};
+    co.self = co;
+    res.redirect("d", co);
 });
 
 app.use("d", (req, res) => {
