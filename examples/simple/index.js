@@ -8,7 +8,8 @@ app.use("/", (req, res) => {
     const links = {
         "f": "Form sample", 
         "f2": "Form sample many fields", 
-        "f3": "Form sample many fields with default and value", 
+        "f3": "Form sample many fields with default and value",
+        "fe": "Form with field error",
         "n": "Just a state", 
         "e": "No handler error",
         "t": "Response timeout", 
@@ -55,7 +56,11 @@ app.use("f3", (req, res) => {
     const form = new InputForm("formaccept", {
         "id": {
             description: "Enter id",
-            value: "1",
+            auto: "1",
+        },
+        "id2": {
+            description: "Enter id2",
+            auto: "2",
         },
         "index": "Just",
         "name": {
@@ -64,8 +69,20 @@ app.use("f3", (req, res) => {
         },
         "score": {
             description: "Enter score (int)",
-            value: "100",
-        }
+            auto: "100",
+        },
+        "x": "Test",
+    });
+    res.send(text, form);
+});
+
+app.use("fe", (req, res) => {
+    const text = 'Hello!';
+    const form = new InputForm("formaccept", {
+        "id": {
+            description: "Enter id",
+            auto: {},
+        },
     });
     res.send(text, form);
 });

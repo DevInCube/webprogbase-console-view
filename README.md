@@ -175,7 +175,7 @@ res.send("Some form text", form);
 
 * `description` - (строка) опис поля
 * `default` - (строка) підставиться у значення поля, якщо користувач введе пусте значення
-* `value` - (строка) автоматично підставиться у значення поля, ввід даних користувачем у дане поле пропускається
+* `auto` - (строка) автоматично підставиться у значення поля, ввід даних користувачем у дане поле пропускається
 
 ```js
 let nextState = "formProcessStateName";
@@ -186,7 +186,7 @@ let fields = {
     },
     "score": {
         description: "Enter score (int)",
-        value: "100",
+        auto: "100",
     }
 };
 let form = new InputForm(nextState, fields);
