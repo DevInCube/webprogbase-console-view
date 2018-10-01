@@ -9,7 +9,8 @@ app.use("/", (req, res) => {
         "f": "Form sample", 
         "f2": "Form sample many fields", 
         "f3": "Form sample many fields with default and value",
-        "fe": "Form with field error",
+        "fe": "Form with field error (object)",
+        "fe2": "Form with field error (integer)",
         "n": "Just a state", 
         "e": "No handler error",
         "t": "Response timeout", 
@@ -82,6 +83,17 @@ app.use("fe", (req, res) => {
         "id": {
             description: "Enter id",
             auto: {},
+        },
+    });
+    res.send(text, form);
+});
+
+app.use("fe2", (req, res) => {
+    const text = 'Hello!';
+    const form = new InputForm("formaccept", {
+        "id": {
+            description: "Enter id",
+            auto: 0,
         },
     });
     res.send(text, form);
