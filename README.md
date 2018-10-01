@@ -171,6 +171,28 @@ let form = new InputForm(nextState, fields);
 res.send("Some form text", form);
 ```
 
+Замість строки із описом поля можна використати об'єкт з додатковою інформацією та налаштуваннями вводу значення у поле:
+
+* `description` - (строка) опис поля
+* `default` - (строка) підставиться у значення поля, якщо користувач введе пусте значення
+* `value` - (строка) автоматично підставиться у значення поля, ввід даних користувачем у дане поле пропускається
+
+```js
+let nextState = "formProcessStateName";
+let fields = {
+    "name": {
+        description: "Enter student name",  
+        default: "New Student",
+    },
+    "score": {
+        description: "Enter score (int)",
+        value: "100",
+    }
+};
+let form = new InputForm(nextState, fields);
+res.send("Some form text", form);
+```
+
 Клас форми також підключається із модуля:
 
 ```js

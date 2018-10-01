@@ -8,6 +8,7 @@ app.use("/", (req, res) => {
     let links = {
         "f": "Form sample", 
         "f2": "Form sample many fields", 
+        "f3": "Form sample many fields with default and value", 
         "n": "Just a state", 
         "e": "No handler error",
         "t": "Response timeout", 
@@ -44,6 +45,23 @@ app.use("f2", (req, res) => {
         "index": "Just",
         "name": "Student name",
         "score": "Hmmmm"
+    });
+    res.send(text, form);
+});
+
+
+app.use("f3", (req, res) => {
+    let text = 'Hello!';
+    let form = new InputForm("formaccept", {
+        "index": "Just",
+        "name": {
+            description: "Enter student name",  
+            default: "New Student",
+        },
+        "score": {
+            description: "Enter score (int)",
+            value: "100",
+        }
     });
     res.send(text, form);
 });
