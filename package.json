@@ -1,6 +1,6 @@
 {
   "name": "webprogbase-console-view",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "DevInCube",
   "description": "Console browser and server app module with simplified express-like API",
   "main": "index.js",
